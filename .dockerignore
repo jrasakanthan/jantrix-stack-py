@@ -1,0 +1,47 @@
+# Git related files
+.git
+.gitignore
+
+# Docker related files
+Dockerfile
+Dockerfile.local
+docker-compose.yml
+.dockerignore
+
+# Python cache and compiled files
+**/__pycache__/
+**/*.py[cod]
+
+# Django migrations
+**/migrations/*.py
+!**/migrations/__init__.py
+
+# Virtual environment and cache directories
+.venv
+.pytest_cache
+.localstack
+__pycache__
+.cache
+
+# IDE/Editor specific directories
+.idea
+.vscode
+.DS_Store
+
+# Node modules and logs
+node_modules
+*.log
+logs/
+
+# Configuration files
+.env
+local.properties
+
+# Documentation and tests (not needed in the image)
+docs/
+README.md
+tests/
+
+# Service specific directories (assuming you have subdirectories per service)
+authservice/
+userprofileservice/

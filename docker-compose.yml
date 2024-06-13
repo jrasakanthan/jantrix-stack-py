@@ -1,0 +1,24 @@
+version: "3.7"
+
+networks:
+  dapperzen:
+    driver: bridge
+
+services:
+  postgres:
+    hostname: postgres
+    image: kartoza/postgis
+    container_name: postgres
+    networks:
+      - dapperzen
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DBNAME: dapperzen, dapperzentest
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
