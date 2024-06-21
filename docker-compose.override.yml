@@ -23,12 +23,14 @@ services:
 
   authservice-debug:
     <<: *authservice
-    command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000"]
     ports:
       - "5678:5678"
+    command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000"]
 
   authservice-test:
     <<: *authservice
+    ports:
+      - "5678:5678"
     command: ["pytest", "-v", "--cov"]
 
   dapzaccessguard: &dapzaccessguard
@@ -37,9 +39,6 @@ services:
       dockerfile: Dockerfile.dev
     env_file:
       - ../dapz-access-guard-py-flask/envs/.env.development
-    environment:
-      - FLASK_ENV=development
-      - FLASK_APP=app.py
     stdin_open: true
     tty: true
     depends_on:
@@ -52,4 +51,9 @@ services:
 
   dapzaccessguard-test:
     <<: *dapzaccessguard
-    command: ["pytest", "-v", "--cov"]
+    env_file:
+      - ../dapz-access-guard-py-flask/envs/.env.testing
+    ports:
+      - "5678:5678"
+    entrypoint: ["python" ,"-m"]
+    command: ["pytest", "-vv", "--cov=.", "--cov-report=term-missing"]
