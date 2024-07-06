@@ -1,14 +1,34 @@
 version: '3.8'
 services:
+  migrations:
+    image: flyway/flyway:9.22
+    env_file:
+      - ../dapz-auth-py-fastapi/envs/.env.development # TODO: this should be configurable, since we want to use the same flyway for all services
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://postgres:5432/dapperzen
+      - FLYWAY_USER=postgres
+      - FLYWAY_PASSWORD=postgres
+      - FLYWAY_SCHEMAS=authservice
+      - FLYWAY_LOCATIONS=filesystem:/flyway/sql
+      - FLYWAY_TABLE=schema_version
+    depends_on:
+      - postgres
+    networks:
+      - dapperzen
+    volumes:
+      - ../dapz-auth-py-fastapi/migrations:/flyway/sql
+    command: ["migrate"]
+
   authservice: &authservice
     build:
-      context: ../dapz-auth-py-flask
+      context: ../dapz-auth-py-fastapi
       dockerfile: Dockerfile.dev
     env_file:
-      - ../dapz-auth-py-flask/envs/.env.development
+      - ../dapz-auth-py-fastapi/envs/.env.development
     environment:
       - FLASK_ENV=development
-      - FLASK_APP=app.py
+      - FLASK_APP=app
+      - FLASK_RUN_HOST=''
     stdin_open: true
     tty: true
     depends_on:
@@ -16,16 +36,20 @@ services:
     networks:
       - dapperzen
     volumes:
-      - ../dapz-auth-py-flask:/app
-    command: ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000"]
+      - ../dapz-auth-py-fastapi:/app
+    entrypoint: ["uvicorn"]
+    command: ["main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
     ports:
-      - "5000:5000"
+      - "8000:8000"
 
   authservice-debug:
     <<: *authservice
     ports:
+      - "8000:8000"
       - "5678:5678"
-    command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000"]
+    entrypoint: ["python"]
+    command: ["-m", "debugpy", "--listen", "5678",
+    "-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
 
   authservice-test:
     <<: *authservice
@@ -33,12 +57,12 @@ services:
       - "5678:5678"
     command: ["pytest", "-v", "--cov"]
 
-  dapzaccessguard: &dapzaccessguard
+  accessguard: &accessguard
     build:
-      context: ../dapz-access-guard-py-flask
+      context: ../dapz-access-guard-py
       dockerfile: Dockerfile.dev
     env_file:
-      - ../dapz-access-guard-py-flask/envs/.env.development
+      - ../dapz-access-guard-py/envs/.env.development
     stdin_open: true
     tty: true
     depends_on:
@@ -46,13 +70,13 @@ services:
     networks:
       - dapperzen
     volumes:
-      - ../dapz-access-guard-py-flask:/app
+      - ../dapz-access-guard-py:/app
     command: ["python", "setup.py", "bdist_wheel"]
 
-  dapzaccessguard-test:
-    <<: *dapzaccessguard
+  accessguard-test:
+    <<: *accessguard
     env_file:
-      - ../dapz-access-guard-py-flask/envs/.env.testing
+      - ../dapz-access-guard-py/envs/.env.testing
     ports:
       - "5678:5678"
     entrypoint: ["python" ,"-m"]
