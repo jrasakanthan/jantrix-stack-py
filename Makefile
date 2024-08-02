@@ -1,65 +1,67 @@
-GITHUB_USERNAME := jrasakanthan
-GITHUB_REPO_NAME := dapz-stack
+include .env
 
-DOCKER_FILE := Dockerfile.base.python
-DOCKER_IMAGE_NAME := dz-base
-DOCKER_IMAGE_VERSION := 0.1.1
-DOCKER_BASE_TAG := python-3.12
-DOCKER_TAG := $(DOCKER_BASE_TAG)-v$(DOCKER_IMAGE_VERSION)
-DOCKER_LATEST_TAG := $(DOCKER_BASE_TAG)-latest
+.PHONY: help stop-containers remove-containers stop-all-containers remove-all-containers remove-all-images remove-all-volumes remove-all-networks ghcr-login build-base push-base tag-base-latest push-base-latest build-push-base build-db
+DOCKER_TAG := $(DOCKER_BASE_TAG_PY)-v$(DOCKER_IMAGE_VERSION)
+DOCKER_LATEST_TAG := $(DOCKER_BASE_TAG_PY)-latest
 
-.PHONY: stop-containers
+
 stop-containers:
-	docker-compose down
+	docker compose down
 
-.PHONY: remove-containers
 remove-containers:
-	docker-compose rm -f
+	docker compose rm -f
 
-.PHONY: ghcr-login
+stop-all-containers:
+	docker stop $(shell docker ps -aq) || true
+
+remove-all-containers: stop-all-containers
+	docker rm $(shell docker ps -aq) || true
+
+remove-all-images:
+	docker rmi $(shell docker images -q) || true
+
+remove-all-volumes:
+	docker volume rm $(shell docker volume ls -q) || true
+
+remove-all-networks:
+	docker network rm $(shell docker network ls -q) || true
+
 ghcr-login:
 	echo $(GHCR_PAT) | docker login ghcr.io -u $(GITHUB_USERNAME) --password-stdin
 
-.PHONY: build-base
 build-base:
 	docker build -t ghcr.io/$(GITHUB_USERNAME)/$(GITHUB_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) -f $(DOCKER_FILE) .
 
-.PHONY: push-base
 push-base:
 	docker push ghcr.io/$(GITHUB_USERNAME)/$(GITHUB_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG)
 
-.PHONY: tag-base-latest
+
 tag-base-latest:
 	docker tag ghcr.io/$(GITHUB_USERNAME)/$(GITHUB_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) ghcr.io/$(GITHUB_USERNAME)/$(GITHUB_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(DOCKER_LATEST_TAG)
 
-.PHONY: push-python-base-latest
 push-base-latest:
 	docker push ghcr.io/$(GITHUB_USERNAME)/$(GITHUB_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(DOCKER_LATEST_TAG)
 
-.PHONY: build-push-base
-build-push-base: build-base push-base tag-base-latest push-base-latest
+build-push-base: ghcr-login build-base push-base tag-base-latest push-base-latest
 
-.PHONY: authservice
-authservice:
-	docker-compose up --build authservice
+start-db:
+	docker compose up --build -d postgres
 
-.PHONY: authservice-debug
-authservice-debug:
-	docker-compose up --build authservice-debug
+stop-db:
+	docker compose down
 
-.PHONY: authservice-test
-authservice-test:
-	docker-compose run --rm --build authservice-test
+build-db:
+	docker compose build --no-cache postgres
 
-.PHONY: dapzaccessguard
-dapzaccessguard:
-	docker-compose run --rm --build dapzaccessguard
+start-all:
+	docker compose up --build -d
 
-.PHONY: dapzaccessguard-test
-dapzaccessguard-test:
-	docker-compose run --rm --build dapzaccessguard-test
+stop-all:
+	docker compose down
 
-.PHONY: help
+create-network:
+	docker network create dapperzen
+# ----------------------------------------------
 help:
 	@echo "Usage: make [target]"
 	@echo ""
@@ -71,10 +73,5 @@ help:
 	@echo "  tag-base-latest: Tag the base image as latest"
 	@echo "  push-base-latest: Push the base image with latest tag to GitHub Container Registry"
 	@echo "  build-push-base: Build and push the base image to GitHub Container Registry"
-	@echo "  authservice: Run the authservice"
-	@echo "  authservice-debug: Run the authservice in debug mode"
-	@echo "  authservice-test: Run the authservice tests"
-	@echo "  dapzaccessguard: Run the dapzaccessguard"
-	@echo "  dapzaccessguard-test: Run the dapzaccessguard tests"
 
 .DEFAULT_GOAL := help

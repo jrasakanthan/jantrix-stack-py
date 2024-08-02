@@ -7,9 +7,6 @@ ENV PYTHONUNBUFFERED 1
 
 ENV PIP_INSTALL_FLAGS="--no-cache-dir --disable-pip-version-check --no-warn-script-location --upgrade"
 
-# Set work directory
-WORKDIR /app
-
 # Install system dependencies
 RUN apt-get update && apt-get install -qqy \
     build-essential \
@@ -28,5 +25,15 @@ RUN apt-get update && apt-get install -qqy \
     gdal-bin \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+
+# Create a non-root user and group
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Switch to the non-root user
+USER appuser
+
+# Set work directory
+WORKDIR /app
 
 RUN pip install ${PIP_INSTALL_FLAGS} pip-tools wheel psycopg2
