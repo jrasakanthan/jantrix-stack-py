@@ -1,9 +1,16 @@
 include .env
 
 .PHONY: help stop-containers remove-containers stop-all-containers remove-all-containers remove-all-images remove-all-volumes remove-all-networks ghcr-login build-base push-base tag-base-latest push-base-latest build-push-base build-db
-DOCKER_TAG := $(DOCKER_BASE_TAG_PY)-v$(DOCKER_IMAGE_VERSION)
-DOCKER_LATEST_TAG := $(DOCKER_BASE_TAG_PY)-latest
 
+DOCKER_BASE_TAG := $(DOCKER_TECHNOLOGY)-$(DOCKER_TECHNOLOGY_VERSION)
+ifneq ($(strip $(DOCKER_ENVIRONMENT)),)
+	DOCKER_BASE_TAG := $(DOCKER_BASE_TAG)-$(DOCKER_ENVIRONMENT)
+endif
+
+DOCKER_TAG := $(DOCKER_BASE_TAG)-v$(DOCKER_IMAGE_VERSION)
+DOCKER_LATEST_TAG := $(DOCKER_BASE_TAG)-latest
+DOCKER_FILE_PATH := ./dockerfiles/$(DOCKER_TECHNOLOGY)
+DOCKER_FILE := $(DOCKER_FILE_PATH)/Dockerfile
 
 stop-containers:
 	docker compose down
@@ -30,7 +37,7 @@ ghcr-login:
 	echo $(GHCR_PAT) | docker login ghcr.io -u $(GITHUB_USERNAME) --password-stdin
 
 build-base:
-	docker build -t ghcr.io/$(GITHUB_USERNAME)/$(GITHUB_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) -f $(DOCKER_FILE) .
+	docker build --no-cache -t ghcr.io/$(GITHUB_USERNAME)/$(GITHUB_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) -f $(DOCKER_FILE) .
 
 push-base:
 	docker push ghcr.io/$(GITHUB_USERNAME)/$(GITHUB_REPO_NAME)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG)
@@ -61,6 +68,9 @@ stop-all:
 
 create-network:
 	docker network create dapperzen
+
+create-rest-api:
+	docker compose up --build -d rest-api
 # ----------------------------------------------
 help:
 	@echo "Usage: make [target]"
