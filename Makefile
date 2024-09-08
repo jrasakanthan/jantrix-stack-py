@@ -10,7 +10,7 @@ endif
 DOCKER_TAG := $(DOCKER_BASE_TAG)-v$(DOCKER_IMAGE_VERSION)
 DOCKER_LATEST_TAG := $(DOCKER_BASE_TAG)-latest
 DOCKER_FILE_PATH := ./dockerfiles/$(DOCKER_TECHNOLOGY)
-DOCKER_FILE := $(DOCKER_FILE_PATH)/Dockerfile
+DOCKER_FILE := $(DOCKER_FILE_PATH)/$(DOCKER_ENVIRONMENT)/Dockerfile
 
 stop-containers:
 	docker compose down
