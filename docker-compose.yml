@@ -1,7 +1,7 @@
 version: "3.7"
 
 networks:
-  dapperzen:
+  jantrix:
     driver: bridge
 
 services:
@@ -10,11 +10,11 @@ services:
     image: kartoza/postgis
     container_name: postgres
     networks:
-      - dapperzen
+      - jantrix
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DBNAME: dapperzen, dapperzentest
+      POSTGRES_DBNAME: jantrix, jantrixtest
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
